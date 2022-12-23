@@ -237,7 +237,7 @@ int isLessOrEqual(int x, int y) {
  *   Rating: 4 
  */
 int logicalNeg(int x) {
-  return 2;
+  return (((~x + 1) >> 31) | (x >> 31)) + 1;
 }
 /* howManyBits - return the minimum number of bits required to represent x in
  *             two's complement
@@ -252,7 +252,24 @@ int logicalNeg(int x) {
  *  Rating: 4
  */
 int howManyBits(int x) {
-  return 0;
+  x = (~(x >> 31) & x) | ((x >> 31) & (~x));
+  int right = x >> 16;
+  int flag = (!!right) << 4;
+  x = x >> flag;
+  int right2 = x >> 8;
+  int flag2 = (!!right2) << 3;
+  x = x >> flag2;
+  int right3 = x >> 4;
+  int flag3 = (!!right3) << 2;
+  x = x >> flag3;
+  int right4 = x >> 2;
+  int flag4 = (!!right4) << 1;
+  x = x >> flag4;
+  int right5 = x >> 1;
+  int flag5 = (!!right5);
+  x = x >> flag5;
+  int flag6 = x;
+  return flag + flag2 + flag3 + flag4 + flag5 + flag6 + 1;
 }
 //float
 /* 
@@ -267,7 +284,20 @@ int howManyBits(int x) {
  *   Rating: 4
  */
 unsigned floatScale2(unsigned uf) {
-  return 2;
+  unsigned signal = (uf >> 31) & 1;
+  unsigned exp = (uf >> 23) & 0xFF;
+  unsigned frac = uf & 0x7FFFFF;
+  if(exp == 0xFF)
+  {
+    return uf;
+  }
+  else if(exp == 0)
+  {
+    frac <<= 1;
+    return (signal << 31) | (exp << 23) | frac;
+  }
+  ++exp;
+  return (signal << 31) | (exp << 23) | frac;
 }
 /* 
  * floatFloat2Int - Return bit-level equivalent of expression (int) f
@@ -282,7 +312,37 @@ unsigned floatScale2(unsigned uf) {
  *   Rating: 4
  */
 int floatFloat2Int(unsigned uf) {
-  return 2;
+  unsigned signal = (uf >> 31) & 1;
+  unsigned exp = (uf >> 23) & 0xFF;
+  unsigned frac = frac & 0x7FFFFF;
+  int e = exp - 127;
+  frac = frac | (1 << 23);
+  if(e < 0)
+  {
+    return 0;
+  }
+  else
+  if(e > 30)
+  {
+    return 0x80000000;
+  }
+  else
+  {
+    if(e < 23)
+    {
+      frac = frac >> (23 - e);
+    }
+    else
+    {
+      frac = frac << (e - 23);
+    }
+  }
+  if(signal)
+  {
+    return ~frac + 1;
+  }
+  return frac;
+
 }
 /* 
  * floatPower2 - Return bit-level equivalent of the expression 2.0^x
@@ -298,5 +358,17 @@ int floatFloat2Int(unsigned uf) {
  *   Rating: 4
  */
 unsigned floatPower2(int x) {
-    return 2;
+    if(x < -149)
+    {
+      return 0;
+    }
+    else if(x < -126)
+    {
+      return (1 << (149 + x));
+    }
+    else if(x <= 127)
+    {
+      return (x + 127) << 23;
+    }
+    return 0xFF << 23;
 }
