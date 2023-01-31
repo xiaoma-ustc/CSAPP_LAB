@@ -1,0 +1,224 @@
+#######################################################################
+# Test for copying block of size 4;
+#######################################################################
+	.pos 0
+main:	irmovq Stack, %rsp  	# Set up stack pointer
+
+	# Set up arguments for copy function and then invoke it
+	irmovq $4, %rdx		# src and dst have 4 elements
+	irmovq dest, %rsi	# dst array
+	irmovq src, %rdi	# src array
+	call ncopy		 
+	halt			# should halt with num nonzeros in %rax
+StartFun:
+#/* $begin ncopy-ys */
+##################################################################
+# ncopy.ys - Copy a src block of len words to dst.
+# Return the number of positive words (>0) contained in src.
+#
+# Include your name and ID here.
+#
+# Describe how and why you modified the baseline code.
+#
+##################################################################
+# Do not modify this portion
+# Function prologue.
+# %rdi = src, %rsi = dst, %rdx = len
+ncopy:
+
+##################################################################
+# You can modify this portion
+	# Loop header
+	iaddq $-10,%rdx			
+	jl initRemainFour
+
+one:	
+	mrmovq (%rdi), %r8	
+	mrmovq 8(%rdi),%r9	
+	rmmovq %r8,(%rsi)	
+	rmmovq %r9,8(%rsi)	
+	andq %r8, %r8		
+	jle two			
+	iaddq $1,%rax
+two:						
+	andq %r9,%r9
+	jle three
+	iaddq $1, %rax		
+three:
+	mrmovq 16(%rdi),%r8
+	mrmovq 24(%rdi),%r9
+	rmmovq %r8,16(%rsi)
+	rmmovq %r9,24(%rsi)
+	andq %r8,%r8
+	jle four
+	iaddq $1,%rax
+four:
+	andq %r9,%r9
+	jle five
+	iaddq $1,%rax
+five:
+	mrmovq 32(%rdi),%r8
+	mrmovq 40(%rdi),%r9
+	rmmovq %r8,32(%rsi)
+	rmmovq %r9,40(%rsi)
+	andq %r8,%r8
+	jle six
+	iaddq $1,%rax
+six:
+	andq %r9,%r9
+	jle seven
+	iaddq $1,%rax
+seven:
+	mrmovq 48(%rdi),%r8
+	mrmovq 56(%rdi),%r9
+	rmmovq %r8,48(%rsi)
+	rmmovq %r9,56(%rsi)
+	andq %r8,%r8
+	jle eight
+	iaddq $1,%rax
+eight:
+	andq %r9,%r9
+	jle nine
+	iaddq $1,%rax
+nine:
+	mrmovq 64(%rdi),%r8
+	mrmovq 72(%rdi),%r9
+	rmmovq %r8,64(%rsi)
+	rmmovq %r9,72(%rsi)
+	andq %r8,%r8
+	jle ten
+	iaddq $1,%rax
+ten:
+	andq %r9,%r9
+	jle Npos
+	iaddq $1,%rax
+Npos:	
+	iaddq $80, %rdi			
+	iaddq $80, %rsi			
+	iaddq $-10, %rdx			
+	andq %rdx,%rdx		
+	jge one			
+
+initRemainFour:					
+	iaddq $6,%rdx			
+	jl initRemainTwo
+
+oneRemainFour:
+	mrmovq (%rdi),%r8
+	mrmovq 8(%rdi),%r9
+	mrmovq 16(%rdi),%r10
+	mrmovq 24(%rdi),%r11
+	rmmovq %r8,(%rsi)
+	rmmovq %r9,8(%rsi)
+	rmmovq %r10,16(%rsi)
+	rmmovq %r11,24(%rsi)
+	andq %r8,%r8
+	jle twoRemainFour
+	iaddq $1,%rax
+twoRemainFour:
+	andq %r9,%r9
+	jle threeRemainFour
+	iaddq $1,%rax
+threeRemainFour:
+	andq %r10,%r10
+	jle fourRemainFour
+	iaddq $1,%rax
+fourRemainFour:
+	andq %r10,%r10
+	jle NposRemainFour
+	iaddq $1,%rax
+NposRemainFour:
+	iaddq $32,%rdi
+	iaddq $32,%rsi
+	iaddq $-4,%rdx
+	jge oneRemainFour
+
+initRemainTwo:				
+	iaddq $2,%rdx			
+	andq %rdx,%rdx
+	jl remain
+oneRemainTwo:
+	mrmovq (%rdi),%r8
+	mrmovq 8(%rdi),%r9
+	rmmovq %r8,(%rsi)
+	rmmovq %r9,8(%rsi)
+	andq %r8,%r8
+	jle twoRemainTwo
+	iaddq $1,%rax
+twoRemainTwo:
+	andq %r9,%r9
+	jle NposRemainTwo
+	iaddq $1,%rax
+NposRemainTwo:
+	iaddq $16,%rdi
+	iaddq $16,%rsi
+	iaddq $-2,%rdx
+	andq %rdx,%rdx	
+	jge oneRemainTwo
+
+remain:
+	iaddq $1,%rdx		
+	jl Done
+	mrmovq (%rdi), %r10	
+	iaddq $8, %rdi		
+	rmmovq %r10, (%rsi)	
+	iaddq $8, %rsi		
+	iaddq $-1,%rdx
+	andq %r10, %r10		
+	jle Done
+	iaddq $1, %rax	
+
+
+##################################################################
+# Do not modify the following section of code
+# Function epilogue.
+Done:
+	ret
+##################################################################
+# Keep the following label at the end of your function
+End:
+#/* $end ncopy-ys */
+EndFun:
+
+###############################
+# Source and destination blocks 
+###############################
+	.align 8
+src:
+	.quad 1
+	.quad 2
+	.quad -3
+	.quad -4
+	.quad 0xbcdefa # This shouldn't get moved
+
+	.align 16
+Predest:
+	.quad 0xbcdefa
+dest:
+	.quad 0xcdefab
+	.quad 0xcdefab
+	.quad 0xcdefab
+	.quad 0xcdefab
+Postdest:
+	.quad 0xdefabc
+
+.align 8
+# Run time stack
+	.quad 0
+	.quad 0
+	.quad 0
+	.quad 0
+	.quad 0
+	.quad 0
+	.quad 0
+	.quad 0
+	.quad 0
+	.quad 0
+	.quad 0
+	.quad 0
+	.quad 0
+	.quad 0
+	.quad 0
+	.quad 0
+
+Stack:
